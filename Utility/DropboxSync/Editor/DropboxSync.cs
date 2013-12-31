@@ -10,7 +10,6 @@ namespace Tinkerbox {
 
         [MenuItem ("Sync/Set Asset Folder...")]
         static void SetFolder () {
-                this.minSize = new Vector2(300,30);
                 dropboxPath = EditorPrefs.GetString("dropbox_path", "c:/users/example/dropbox");
                 EditorWindow.GetWindow<DropboxSync>();
         }
