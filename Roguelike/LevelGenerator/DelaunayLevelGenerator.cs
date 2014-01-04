@@ -2,10 +2,11 @@
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using Tinkerbox.Geometry;
 
 
 [RequireComponent(typeof(MeshFilter))]
-public class LevelGenerator : MonoBehaviour {
+public class DelaunayLevelGenerator : MonoBehaviour {
 
 	// Use this for initialization
 	public int numberOfPoints = 30;
@@ -27,24 +28,15 @@ public class LevelGenerator : MonoBehaviour {
 	}
 
 	public void Generate(){
-		//clean up
-		EdgeCollider2D[] cols = GetComponents<EdgeCollider2D> ();
-		foreach (EdgeCollider2D col in cols) {
-			DestroyImmediate(col);
-		}
 
-		PolygonCollider2D[] polyCols = GetComponents<PolygonCollider2D> ();
-		foreach (PolygonCollider2D polyCol in polyCols) {
-			DestroyImmediate(polyCol);
-		}
 		generationMessage = "Generating points...";
 
 		//Generate some points...
-		List<Vector2> generationPoints = new List<Vector2>();
+		List<Point> generationPoints = new List<Point>();
 
 		for(int i = 0; i < numberOfPoints; i++) {
-			Vector2 randomPoint = new Vector2(Random.Range(-levelRadius, levelRadius), Random.Range(-levelRadius, levelRadius));
-			randomPoint = new Vector2( Mathf.Round(randomPoint.x * delaunayPointSnap) / delaunayPointSnap, Mathf.Round(randomPoint.y * delaunayPointSnap) / delaunayPointSnap);
+			Point randomPoint = new Point(Random.Range(-levelRadius, levelRadius), Random.Range(-levelRadius, levelRadius));
+			randomPoint = new Point( Mathf.Round(randomPoint.x * delaunayPointSnap) / delaunayPointSnap, Mathf.Round(randomPoint.y * delaunayPointSnap) / delaunayPointSnap);
 			if(!generationPoints.Contains(randomPoint)) {
 				generationPoints.Add(randomPoint);
 			}
@@ -54,9 +46,9 @@ public class LevelGenerator : MonoBehaviour {
 
 		generationMessage = "Triangulating...";
 		//Generate a delaunay triangulation of the points 
-		Poly2Tri.PointSet ps = new Poly2Tri.PointSet(Poly2TriAdapter.Vector2ToP2TList(generationPoints));
+		Poly2Tri.PointSet ps = new Poly2Tri.PointSet(generationPoints.Select(d=>(Poly2Tri.TriangulationPoint)d).ToList());
 		Poly2Tri.P2T.Triangulate (ps);
-		List<Poly2Tri.DelaunayTriangle> delaunayTriangles = (List<Poly2Tri.DelaunayTriangle>) ps.Triangles;
+		List<Poly2Tri.DelaunayTriangle> delaunayTriangles = ps.Triangles.ToList();
 
 		generationMessage = "Performing Brownian Walk through triangulation...";
 		//Brownian Walk through the triangles.
@@ -83,7 +75,7 @@ public class LevelGenerator : MonoBehaviour {
 		}
 
 		generationMessage = "Getting level boolean...";
-		List<Poly2Tri.DelaunayTriangle> booleanFromLevelSet = delaunayTriangles.Where (x => !levelTriangleSet.Contains (x)).ToList (); 
+		//List<Poly2Tri.DelaunayTriangle> booleanFromLevelSet = delaunayTriangles.Where (x => !levelTriangleSet.Contains (x)).ToList (); 
 
 		/* Debugging delaunay triangulation
 		foreach (Poly2Tri.DelaunayTriangle tri in booleanFromLevelSet) {
@@ -93,34 +85,34 @@ public class LevelGenerator : MonoBehaviour {
 		}
 		*/
 
-		generationMessage = "Generating mesh from boolean...";
-		Mesh mesh = Poly2TriAdapter.Poly2TriToMesh (booleanFromLevelSet);
-		generationMessage = "Optimizing...";
-		mesh.Optimize ();
-		GetComponent<MeshFilter> ().sharedMesh = mesh;
 
 		//Generate colliders...
 		ClipperLib.Clipper clipper = new ClipperLib.Clipper ();
-		foreach(Poly2Tri.DelaunayTriangle tri in booleanFromLevelSet) {
-			List<ClipperLib.IntPoint> trianglePoints = new List<ClipperLib.IntPoint>();
+		foreach(Poly2Tri.DelaunayTriangle tri in levelTriangleSet) {
+			Polygon trianglePoints = new Polygon();
 			for(int i = 0; i < 3; i++) {
-				trianglePoints.Add(new ClipperLib.IntPoint(tri.Points[i].Xf,tri.Points[i].Yf));
+				trianglePoints.points.Add(tri.Points[i]);
 			}
-			clipper.AddPath(trianglePoints,ClipperLib.PolyType.ptClip, true);
+			clipper.AddPath(trianglePoints, ClipperLib.PolyType.ptSubject, true);
+		
 		}
-		List<List<ClipperLib.IntPoint>> solution = new List<List<ClipperLib.IntPoint>> ();
-		clipper.Execute (ClipperLib.ClipType.ctUnion, solution);
 
+		List<List<ClipperLib.IntPoint>> solution = new List<List<ClipperLib.IntPoint>> ();
+		clipper.Execute (ClipperLib.ClipType.ctUnion, solution, ClipperLib.PolyFillType.pftPositive, ClipperLib.PolyFillType.pftPositive);
+
+		generationMessage = "Generating mesh from boolean...";
+		DestructibleLevel level = GetComponent<DestructibleLevel> ();
+		if (level == null) {
+			level = gameObject.AddComponent<DestructibleLevel>();
+		}
 
 		foreach (List<ClipperLib.IntPoint> polygon in solution) {
-			Vector2[] unityPoints = new Vector2[polygon.Count + 1];
-			for(int i = 0; i < polygon.Count; i++) {
-				unityPoints[i] = new Vector2(polygon[i].X,polygon[i].Y);
-			}
-			unityPoints[polygon.Count] = new Vector2(polygon[0].X,polygon[0].Y);
-			EdgeCollider2D collider = gameObject.AddComponent<EdgeCollider2D>();
-			collider.points = unityPoints;
+			level.booleanPolygons.Add(new Tinkerbox.Geometry.Polygon(polygon));
 		}
+
+		level.UpdateMesh();
+
+
 
 		generationMessage = "Calling Callback..";
 		OnFinishedGeneration();
@@ -139,7 +131,7 @@ public class LevelGenerator : MonoBehaviour {
 		for (int i = 0; i < decorationsToSpawn; i++) {
 			GameObject decoration = (GameObject) Instantiate(decorations[Mathf.FloorToInt(Random.value * decorations.Length)]);
 			Poly2Tri.DelaunayTriangle decorSpawnTriangle = levelTriangleSet [Mathf.FloorToInt (Random.value * levelTriangleSet.Count)];
-			Vector2 decorSpawnPoint = new Vector2 (decorSpawnTriangle.Centroid ().Xf, decorSpawnTriangle.Centroid ().Yf);
+			Point decorSpawnPoint = decorSpawnTriangle.Centroid();
 			decoration.transform.position = decorSpawnPoint + Random.insideUnitCircle;
 		}
 

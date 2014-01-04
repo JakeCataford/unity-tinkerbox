@@ -34,4 +34,12 @@ public class Poly2TriAdapter {
 		mesh.triangles = tris.ToArray();
 		return mesh;
 	}
+
+	public static Poly2Tri.Polygon ConvertFromClipper(List<ClipperLib.IntPoint> polygon) {
+		Poly2Tri.PolygonPoint[] points = new Poly2Tri.PolygonPoint[polygon.Count];
+		for(int i = 0; i < polygon.Count; i++) {
+			points[i] = new Poly2Tri.PolygonPoint(polygon[i].X,polygon[i].Y);
+		}
+		return new Poly2Tri.Polygon(points);
+	}
 }
