@@ -123,6 +123,8 @@ public class DestructibleLevel : MonoBehaviour {
 		solutions = solution.Select (x => (Polygon)x).ToList ();
 		GetComponent<MeshFilter> ().sharedMesh = mesh;
 
+
+
 		foreach (Polygon polygon in solution) {
 			Vector2[] unityPoints = new Vector2[polygon.points.Count + 1];
 			for(int i = 0; i < polygon.points.Count; i++) {
@@ -134,5 +136,7 @@ public class DestructibleLevel : MonoBehaviour {
 		}
 
 		solutionCount = booleanUnionSolution.Count;
+		//No need to store polygons that we won't need to reference...
+		booleanPolygons = booleanUnionSolution.Select(x=>(Polygon)x).ToList();
 	}
 }
