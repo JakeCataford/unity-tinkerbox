@@ -78,7 +78,8 @@ public class DestructibleLevel : MonoBehaviour {
 							Gizmos.color = Color.blue;
 					}
 					for (int i = 1; i < polygon.points.Count; i++) {
-							Gizmos.DrawLine ((Vector2)polygon.points [i - 1], (Vector2)polygon.points [i]);
+						Gizmos.DrawWireSphere((Vector2) polygon.points[i], 0.2f);
+						Gizmos.DrawLine ((Vector2)polygon.points [i - 1], (Vector2)polygon.points [i]);
 					}
 					Gizmos.DrawLine ((Vector2)polygon.points.Last (), (Vector2)polygon.points.First ());
 			}
@@ -106,7 +107,8 @@ public class DestructibleLevel : MonoBehaviour {
 		levelArea.points.Add (new Point (1000f, -1000f));
 		levelArea.points.Add (new Point (-1000f, -1000f));
 		ClipperLib.Clipper clipper = new ClipperLib.Clipper ();
-
+		//Strictly simple is computationally expensive, but prevents points from appearing too close together and making Poly2Tri Shit the bed.
+		clipper.StrictlySimple = true;
 		foreach (Polygon polygon in booleanPolygons) {
 			clipper.AddPath(polygon,ClipperLib.PolyType.ptClip, true);
 		}

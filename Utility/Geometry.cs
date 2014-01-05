@@ -67,6 +67,7 @@ namespace Tinkerbox {
 			/// <summary>
 			/// List of points in the polygon. Ordered by their 
 			/// </summary>
+			[SerializeField]
 			public List<Point> points = new List<Point>();
 
 			/// <summary>
@@ -100,8 +101,11 @@ namespace Tinkerbox {
 			}
 		}
 
+		[System.Serializable]
 		public class Point {
+			[SerializeField]
 			public float x = 0.0f;
+			[SerializeField]
 			public float y = 0.0f;
 
 			public Point(float x, float y) {

@@ -36,7 +36,7 @@ public class DelaunayLevelGenerator : MonoBehaviour {
 
 		for(int i = 0; i < numberOfPoints; i++) {
 			Point randomPoint = new Point(Random.Range(-levelRadius, levelRadius), Random.Range(-levelRadius, levelRadius));
-			randomPoint = new Point( Mathf.Round(randomPoint.x * delaunayPointSnap) / delaunayPointSnap, Mathf.Round(randomPoint.y * delaunayPointSnap) / delaunayPointSnap);
+			randomPoint = new Point( (randomPoint.x * delaunayPointSnap) / delaunayPointSnap, (randomPoint.y * delaunayPointSnap) / delaunayPointSnap);
 			if(!generationPoints.Contains(randomPoint)) {
 				generationPoints.Add(randomPoint);
 			}
