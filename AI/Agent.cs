@@ -16,6 +16,7 @@ namespace Tinkerbox {
 		protected virtual void OnDamage(Vector2 source) {}
 		protected virtual void OnDie(Vector2 damageSource) {}
 		protected virtual void Always() {}
+		protected virtual void OnTouchPlayer(GameObject player) {}
 
 		public int hitPoints = 5;
 		public State coreState = State.IDLE;
@@ -70,25 +71,33 @@ namespace Tinkerbox {
 		}
 
 		void OnDrawGizmos() {
-			if (coreState == State.IDLE) {
-				Gizmos.color = Color.green;
-			}
-
-			if (coreState == State.ENGAGING) {
-				Gizmos.color = Color.red;
-			}
-
-			if (coreState == State.DEAD) {
-				Gizmos.color = Color.gray;
-			}
-
-			Gizmos.DrawWireCube(transform.position, Vector3.one);
-			Gizmos.DrawWireSphere (transform.position, visionRange);
-			if (coreState == State.ENGAGING) {
-				RaycastHit2D hit = Physics2D.Raycast(this.transform.position, targetPlayer.transform.position - transform.position);
-				if(hit) {
-					Gizmos.DrawLine (this.transform.position, hit.point);
+			if (DebugAgent) {
+				if (coreState == State.IDLE) {
+						Gizmos.color = Color.green;
 				}
+
+				if (coreState == State.ENGAGING) {
+						Gizmos.color = Color.red;
+				}
+
+				if (coreState == State.DEAD) {
+						Gizmos.color = Color.gray;
+				}
+
+				Gizmos.DrawWireCube (transform.position, Vector3.one);
+				Gizmos.DrawWireSphere (transform.position, visionRange);
+				if (coreState == State.ENGAGING) {
+						RaycastHit2D hit = Physics2D.Raycast (this.transform.position, targetPlayer.transform.position - transform.position);
+						if (hit) {
+								Gizmos.DrawLine (this.transform.position, hit.point);
+						}
+				}
+			}
+		}
+
+		void OnCollisionEnter2D(Collision2D col) {
+			if (col.collider.tag == "Player") {
+				OnTouchPlayer(col.collider.gameObject);
 			}
 		}
 

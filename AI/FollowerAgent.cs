@@ -18,5 +18,9 @@ namespace Tinkerbox {
 			rigidbody2D.AddForce ((targetPlayer.transform.position - transform.position).normalized * acceleration);
 		}
 
+		protected override void OnTouchPlayer(GameObject player) {
+			player.GetComponent<Agent> ().Damage (1, (targetPlayer.transform.position - transform.position).normalized);
+		}
+
 	}
 }
