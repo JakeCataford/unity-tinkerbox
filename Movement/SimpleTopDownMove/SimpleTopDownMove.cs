@@ -6,6 +6,7 @@ namespace Tinkerbox {
   public class SimpleTopDownMove : MonoBehaviour {
 
     public float acceleration = 50f;
+
   	
 	void Start() {
 		rigidbody2D.gravityScale = 0;
@@ -13,6 +14,7 @@ namespace Tinkerbox {
 
   	void FixedUpdate () {
   		rigidbody2D.AddForce(new Vector2(Input.GetAxis("Horizontal") * acceleration, Input.GetAxis("Vertical") * acceleration));
+		
   	}
   }
 }
